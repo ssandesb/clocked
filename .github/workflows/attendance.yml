@@ -1,0 +1,83 @@
+name: Automated Attendance Bot
+
+on:
+  schedule:
+    # GitHub cron runs in UTC. Nepal (Asia/Kathmandu) is UTC+5:45.
+    #   09:00 NPT -> 03:15 UTC   (clock-in window)
+    #   18:00 NPT -> 12:15 UTC   (clock-out window)
+    # If you change CLOCK_IN_TIME / CLOCK_OUT_TIME repo variables, update
+    # these two lines to match (converted to UTC).
+    - cron: "15 3 * * 1-5"   # Mon-Fri 09:00 Nepal time -> clock in
+    - cron: "15 12 * * 1-5"  # Mon-Fri 18:00 Nepal time -> clock out
+
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Which action to run"
+        required: true
+        default: "auto"
+        type: choice
+        options: [auto, clock-in, clock-out]
+      portal_url:
+        description: "Portal domain override (e.g. founderp.com). Leave empty to use the PORTAL_URL secret."
+        required: false
+        default: ""
+      force:
+        description: "Force run (ignore weekend / time-window checks)"
+        required: false
+        default: false
+        type: boolean
+
+# Never allow two runs to race each other.
+concurrency:
+  group: attendance-bot
+  cancel-in-progress: false
+
+jobs:
+  attendance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      # Persist the portal session (state.json) between runs so the bot can
+      # skip login while the session is still valid.
+      - name: Restore session state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: attendance-session-${{ github.run_id }}
+          restore-keys: attendance-session-
+
+      - name: Run attendance bot
+        env:
+          PORTAL_URL: ${{ inputs.portal_url != '' && inputs.portal_url || secrets.PORTAL_URL }}
+          PORTAL_EMAIL: ${{ secrets.PORTAL_EMAIL }}
+          PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+          ATTENDANCE_TZ: ${{ vars.ATTENDANCE_TZ || 'Asia/Kathmandu' }}
+          CLOCK_IN_TIME: ${{ vars.CLOCK_IN_TIME || '09:00' }}
+          CLOCK_OUT_TIME: ${{ vars.CLOCK_OUT_TIME || '18:00' }}
+          TIME_TOLERANCE_MIN: ${{ vars.TIME_TOLERANCE_MIN || '90' }}
+        run: |
+          python attendance_bot.py \
+            --action "${{ inputs.action || 'auto' }}" \
+            ${{ inputs.force == true && '--force' || '' }}
+
+      - name: Save session state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: attendance-session-${{ github.run_id }}
