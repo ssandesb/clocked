@@ -3,7 +3,7 @@ name: Automated Attendance Bot
 on:
   schedule:
     # GitHub cron runs in UTC. Nepal (Asia/Kathmandu) is UTC+5:45.
-    #   09:00 NPT -> 03:15 UTC   (clock-in window)
+    #   12:42 NPT -> 03:15 UTC   (clock-in window)
     #   18:00 NPT -> 12:15 UTC   (clock-out window)
     # If you change CLOCK_IN_TIME / CLOCK_OUT_TIME repo variables, update
     # these two lines to match (converted to UTC).
