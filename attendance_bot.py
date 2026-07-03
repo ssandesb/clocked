@@ -220,24 +220,32 @@ def do_login(page: Page, base_url: str, login_path: str, email: str, password: s
 
 def perform_action(page: Page, action: str) -> bool:
     button_name = "Clock In" if action == "clock-in" else "Clock Out"
-    button = page.get_by_role("button", name=button_name, exact=False)
+    opposite = "Clock Out" if action == "clock-in" else "Clock In"
 
+    target = page.get_by_role("button", name=button_name, exact=False)
     try:
-        button.first.wait_for(state="visible", timeout=10_000)
+        target.first.wait_for(state="visible", timeout=10_000)
     except PlaywrightTimeout:
-        log("warn", f'"{button_name}" button not visible — already actioned or wrong page state. No-op.')
-        debug_page(page, f"no-{action}-button")
-        return False
+        # Idempotent: already in the desired state (e.g. clock-in requested but Clock Out showing).
+        try:
+            page.get_by_role("button", name=opposite, exact=False).first.wait_for(
+                state="visible", timeout=3_000
+            )
+            log("warn", f'Already {action.replace("-", " ")}ed — "{opposite}" is showing instead. No-op.')
+            return True
+        except PlaywrightTimeout:
+            log("warn", f'Neither "{button_name}" nor "{opposite}" visible. No-op.')
+            debug_page(page, f"no-{action}-button")
+            return False
 
-    button.first.click(timeout=ACTION_TIMEOUT_MS)
+    target.first.click(timeout=ACTION_TIMEOUT_MS)
     log("info", f'Clicked "{button_name}"')
 
-    expected_next = "Clock Out" if action == "clock-in" else "Start New Session"
     try:
-        page.get_by_role("button", name=expected_next, exact=False).first.wait_for(
+        page.get_by_role("button", name=opposite, exact=False).first.wait_for(
             state="visible", timeout=10_000
         )
-        log("info", f'Verified: "{expected_next}" now visible.')
+        log("info", f'Verified: "{opposite}" now visible.')
     except PlaywrightTimeout:
         log("warn", f'Clicked "{button_name}" but could not verify follow-up UI state.')
     return True

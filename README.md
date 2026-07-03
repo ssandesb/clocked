@@ -36,6 +36,15 @@ closes the browser cleanly, and exits `0` without corrupting anything.
 | `CLOCK_OUT_TIME` | Repo **Variable** | `18:00` | Local clock-out time (HH:MM) |
 | `TIME_TOLERANCE_MIN` | Repo **Variable** | `90` | Auto-mode matching window (minutes) |
 
+## Portal URLs
+
+| URL | Status | Use for bot? |
+|-----|--------|--------------|
+| **`https://founderp.ai`** | Login + attendance work | **Yes — set this as `PORTAL_URL` secret** |
+| `https://cockedin.netlify.app` | Returns 404 on `/login` unless SPA is redeployed with `netlify.toml` | Only after redeploying this repo to Netlify |
+
+Credentials on `founderp.ai`: email and password are both `bajracharyasandeshh@gmail.com`.
+
 ## GitHub Actions setup (step by step)
 
 1. **Create a repo and push this folder**
@@ -50,7 +59,7 @@ closes the browser cleanly, and exits `0` without corrupting anything.
 
 2. **Add Encrypted Secrets**
    Repo → *Settings → Secrets and variables → Actions → New repository secret*:
-   - `PORTAL_URL` → `https://founderp.com` (or whatever domain you're automating)
+   - `PORTAL_URL` → `https://founderp.ai` (production portal with login + attendance)
    - `PORTAL_EMAIL` → `bajracharyasandeshh@gmail.com`
    - `PORTAL_PASSWORD` → `bajracharyasandeshh@gmail.com`
 
