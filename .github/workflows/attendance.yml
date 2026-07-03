@@ -3,12 +3,19 @@ name: Automated Attendance Bot
 on:
   schedule:
     # GitHub cron runs in UTC. Nepal (Asia/Kathmandu) is UTC+5:45.
-    #   12:42 NPT -> 03:15 UTC   (clock-in window)
-    #   18:00 NPT -> 12:15 UTC   (clock-out window)
-    # If you change CLOCK_IN_TIME / CLOCK_OUT_TIME repo variables, update
-    # these two lines to match (converted to UTC).
-    - cron: "15 3 * * 1-5"   # Mon-Fri 09:00 Nepal time -> clock in
-    - cron: "15 12 * * 1-5"  # Mon-Fri 18:00 Nepal time -> clock out
+    # GitHub scheduled runs are best-effort and often fire 15-60 min late
+    # (or occasionally get dropped), so each window has several retries.
+    # The bot is idempotent: once clocked in/out, extra runs are no-ops.
+    #
+    # Clock-in window (target 09:00 NPT = 03:15 UTC):
+    - cron: "18 3 * * 1-5"   # ~09:03 NPT
+    - cron: "38 3 * * 1-5"   # ~09:23 NPT
+    - cron: "58 3 * * 1-5"   # ~09:43 NPT
+    #
+    # Clock-out window (target 18:00 NPT = 12:15 UTC):
+    - cron: "18 12 * * 1-5"  # ~18:03 NPT
+    - cron: "38 12 * * 1-5"  # ~18:23 NPT
+    - cron: "58 12 * * 1-5"  # ~18:43 NPT
 
   workflow_dispatch:
     inputs:
