@@ -219,7 +219,7 @@ def do_login(page: Page, base_url: str, login_path: str, email: str, password: s
 
 
 def detect_attendance_state(page: Page) -> str:
-    """Read the attendance card: Clock Out visible => user is clocked in."""
+    """Read the attendance card UI to infer clock-in status."""
     try:
         if page.get_by_role("button", name="Clock Out", exact=False).first.is_visible(timeout=4_000):
             return "clocked-in"
@@ -227,6 +227,17 @@ def detect_attendance_state(page: Page) -> str:
         pass
     try:
         if page.get_by_role("button", name="Clock In", exact=False).first.is_visible(timeout=4_000):
+            return "clocked-out"
+    except PlaywrightTimeout:
+        pass
+    # After clock-out for the day, portal may show Start New Session or a completed banner.
+    try:
+        if page.get_by_role("button", name="Start New Session", exact=False).first.is_visible(timeout=2_000):
+            return "clocked-out"
+    except PlaywrightTimeout:
+        pass
+    try:
+        if page.get_by_text("Attendance completed for today", exact=False).first.is_visible(timeout=2_000):
             return "clocked-out"
     except PlaywrightTimeout:
         pass
@@ -262,6 +273,25 @@ def resolve_action_for_state(requested: str, state: str, *, allow_toggle: bool) 
     return requested
 
 
+def dismiss_confirmation_dialog(page: Page, action: str) -> None:
+    """Click Confirm on the Clock In/Out confirmation modal if it appears."""
+    heading = "Clock In Confirmation" if action == "clock-in" else "Clock Out Confirmation"
+    try:
+        page.get_by_text(heading, exact=False).first.wait_for(state="visible", timeout=5_000)
+    except PlaywrightTimeout:
+        # Some builds may skip the heading; still try the Confirm button.
+        pass
+
+    confirm = page.get_by_role("button", name="Confirm", exact=True)
+    try:
+        confirm.first.wait_for(state="visible", timeout=5_000)
+        confirm.first.click(timeout=ACTION_TIMEOUT_MS)
+        log("info", f'Confirmation dialog: clicked "Confirm" for {action}.')
+        page.wait_for_timeout(800)
+    except PlaywrightTimeout:
+        log("info", "No confirmation dialog (proceeded without extra click).")
+
+
 def perform_action(page: Page, action: str) -> bool:
     button_name = "Clock In" if action == "clock-in" else "Clock Out"
     opposite = "Clock Out" if action == "clock-in" else "Clock In"
@@ -277,14 +307,27 @@ def perform_action(page: Page, action: str) -> bool:
     target.first.click(timeout=ACTION_TIMEOUT_MS)
     log("info", f'Clicked "{button_name}"')
 
+    dismiss_confirmation_dialog(page, action)
+
+    expected = "clocked-in" if action == "clock-in" else "clocked-out"
+    for _ in range(6):
+        state = detect_attendance_state(page)
+        if state == expected:
+            log("info", f"Verified attendance state: {state}")
+            return True
+        page.wait_for_timeout(1_000)
+
     follow_ups = [opposite]
     if action == "clock-out":
-        follow_ups.append("Start New Session")
+        follow_ups.extend(["Start New Session", "Attendance completed for today"])
     for name in follow_ups:
         try:
-            page.get_by_role("button", name=name, exact=False).first.wait_for(
-                state="visible", timeout=8_000
-            )
+            if name == "Attendance completed for today":
+                page.get_by_text(name, exact=False).first.wait_for(state="visible", timeout=3_000)
+            else:
+                page.get_by_role("button", name=name, exact=False).first.wait_for(
+                    state="visible", timeout=3_000
+                )
             log("info", f'Verified: "{name}" now visible.')
             return True
         except PlaywrightTimeout:
