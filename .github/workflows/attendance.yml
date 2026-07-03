@@ -66,6 +66,8 @@ jobs:
           PORTAL_URL: ${{ inputs.portal_url != '' && inputs.portal_url || secrets.PORTAL_URL }}
           PORTAL_EMAIL: ${{ secrets.PORTAL_EMAIL }}
           PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+          LOGIN_PATH: ${{ vars.LOGIN_PATH || '/login' }}
+          ATTENDANCE_PATH: ${{ vars.ATTENDANCE_PATH || '/user/attendance' }}
           ATTENDANCE_TZ: ${{ vars.ATTENDANCE_TZ || 'Asia/Kathmandu' }}
           CLOCK_IN_TIME: ${{ vars.CLOCK_IN_TIME || '09:00' }}
           CLOCK_OUT_TIME: ${{ vars.CLOCK_OUT_TIME || '18:00' }}
@@ -74,6 +76,14 @@ jobs:
           python attendance_bot.py \
             --action "${{ inputs.action || 'auto' }}" \
             ${{ inputs.force == true && '--force' || '' }}
+
+      - name: Upload debug screenshot on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshot
+          path: debug-page.png
+          if-no-files-found: ignore
 
       - name: Save session state
         if: always()
