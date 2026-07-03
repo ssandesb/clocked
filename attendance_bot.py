@@ -218,6 +218,50 @@ def do_login(page: Page, base_url: str, login_path: str, email: str, password: s
     log("info", "Login OK")
 
 
+def detect_attendance_state(page: Page) -> str:
+    """Read the attendance card: Clock Out visible => user is clocked in."""
+    try:
+        if page.get_by_role("button", name="Clock Out", exact=False).first.is_visible(timeout=4_000):
+            return "clocked-in"
+    except PlaywrightTimeout:
+        pass
+    try:
+        if page.get_by_role("button", name="Clock In", exact=False).first.is_visible(timeout=4_000):
+            return "clocked-out"
+    except PlaywrightTimeout:
+        pass
+    return "unknown"
+
+
+def resolve_action_for_state(requested: str, state: str, *, allow_toggle: bool) -> str | None:
+    """Map requested action to what the UI actually needs.
+
+    Scheduled runs (allow_toggle=False):
+      - clock-in when already clocked-in  -> no-op
+      - clock-out when already clocked-out -> no-op
+
+    Manual / --force (allow_toggle=True):
+      - clock-in when already clocked-in  -> clock-out (vice versa)
+      - clock-out when already clocked-out -> clock-in
+    """
+    if state == "unknown":
+        return requested
+
+    if requested == "clock-in":
+        if state == "clocked-out":
+            return "clock-in"
+        if state == "clocked-in":
+            return "clock-out" if allow_toggle else None
+
+    if requested == "clock-out":
+        if state == "clocked-in":
+            return "clock-out"
+        if state == "clocked-out":
+            return "clock-in" if allow_toggle else None
+
+    return requested
+
+
 def perform_action(page: Page, action: str) -> bool:
     button_name = "Clock In" if action == "clock-in" else "Clock Out"
     opposite = "Clock Out" if action == "clock-in" else "Clock In"
@@ -226,32 +270,39 @@ def perform_action(page: Page, action: str) -> bool:
     try:
         target.first.wait_for(state="visible", timeout=10_000)
     except PlaywrightTimeout:
-        # Idempotent: already in the desired state (e.g. clock-in requested but Clock Out showing).
-        try:
-            page.get_by_role("button", name=opposite, exact=False).first.wait_for(
-                state="visible", timeout=3_000
-            )
-            log("warn", f'Already {action.replace("-", " ")}ed — "{opposite}" is showing instead. No-op.')
-            return True
-        except PlaywrightTimeout:
-            log("warn", f'Neither "{button_name}" nor "{opposite}" visible. No-op.')
-            debug_page(page, f"no-{action}-button")
-            return False
+        log("warn", f'"{button_name}" button not visible.')
+        debug_page(page, f"no-{action}-button")
+        return False
 
     target.first.click(timeout=ACTION_TIMEOUT_MS)
     log("info", f'Clicked "{button_name}"')
 
-    try:
-        page.get_by_role("button", name=opposite, exact=False).first.wait_for(
-            state="visible", timeout=10_000
-        )
-        log("info", f'Verified: "{opposite}" now visible.')
-    except PlaywrightTimeout:
-        log("warn", f'Clicked "{button_name}" but could not verify follow-up UI state.')
+    follow_ups = [opposite]
+    if action == "clock-out":
+        follow_ups.append("Start New Session")
+    for name in follow_ups:
+        try:
+            page.get_by_role("button", name=name, exact=False).first.wait_for(
+                state="visible", timeout=8_000
+            )
+            log("info", f'Verified: "{name}" now visible.')
+            return True
+        except PlaywrightTimeout:
+            continue
+    log("warn", f'Clicked "{button_name}" but could not verify follow-up UI state.')
     return True
 
 
-def run(action: str, base_url: str, login_path: str, attendance_path: str, email: str, password: str) -> None:
+def run(
+    action: str,
+    base_url: str,
+    login_path: str,
+    attendance_path: str,
+    email: str,
+    password: str,
+    *,
+    allow_toggle: bool,
+) -> None:
     with sync_playwright() as pw:
         browser: Browser = pw.chromium.launch(headless=True)
         try:
@@ -279,7 +330,16 @@ def run(action: str, base_url: str, login_path: str, attendance_path: str, email
                     log("error", "Still not authenticated after login. Aborting.")
                     sys.exit(1)
 
-            perform_action(page, action)
+            state = detect_attendance_state(page)
+            log("info", f"Attendance state: {state}")
+            effective = resolve_action_for_state(action, state, allow_toggle=allow_toggle)
+            if effective is None:
+                log("info", f"Requested {action} but already in that state — no-op.")
+                context.storage_state(path=str(STATE_FILE))
+                return
+            if effective != action:
+                log("info", f"Flipping action: {action} -> {effective} (currently {state})")
+            perform_action(page, effective)
             context.storage_state(path=str(STATE_FILE))
             log("info", f"Session state saved to {STATE_FILE}")
         finally:
@@ -332,7 +392,8 @@ def main() -> int:
         action = resolved
 
     log("info", f"Action: {action}")
-    run(action, base_url, login_path, attendance_path, email, password)
+    allow_toggle = args.force or os.environ.get("SMART_TOGGLE", "").lower() in ("1", "true", "yes")
+    run(action, base_url, login_path, attendance_path, email, password, allow_toggle=allow_toggle)
     return 0
 
 
