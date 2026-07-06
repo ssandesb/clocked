@@ -1,0 +1,30 @@
+# Input format for tasks_bot.py
+#
+# Top-level keys are defaults applied to every task; each task can override them.
+# Dates use Nepali calendar DAY NUMBERS in the current month, or "first" / "last"
+# to pick the first/last selectable day in the portal's date picker.
+
+company: Clock b Business Technology
+project: Urja Nepal
+assignee: Sandesh Bajracharya
+priority: Medium          # Low | Medium | High
+deadline_day: last        # required by the portal; day number, "first" or "last"
+
+tasks:
+  - title: Design dashboard layout
+    description: Wireframe and finalize the main dashboard.
+    hours: 4              # used when no subtasks are given (one subtask is auto-created)
+    criteria:
+      - Wireframe approved by team
+    subtasks:
+      - title: Wireframe
+        hours: 2
+      - title: Review with team
+        hours: 2
+
+  - title: API integration
+    hours: 6
+    priority: High
+
+  # Shorthand: a bare string becomes a 1-hour task with the same-named subtask.
+  - Update project README

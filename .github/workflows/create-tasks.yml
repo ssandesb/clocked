@@ -1,0 +1,77 @@
+name: Create Tasks
+
+# Bulk-create tasks on the portal from a YAML file in the repo.
+# Usage: edit/commit a tasks YAML file (see tasks.example.yaml), then
+# Actions -> Create Tasks -> Run workflow, and point it at that file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tasks_file:
+        description: "Path to the tasks YAML file in the repo"
+        required: true
+        default: "tasks.yaml"
+      dry_run:
+        description: "Dry run (fill forms but do not submit)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: tasks-bot
+  cancel-in-progress: false
+
+jobs:
+  create-tasks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Restore session state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: attendance-session-${{ github.run_id }}
+          restore-keys: attendance-session-
+
+      - name: Run tasks bot
+        env:
+          PORTAL_URL: ${{ secrets.PORTAL_URL }}
+          PORTAL_EMAIL: ${{ secrets.PORTAL_EMAIL }}
+          PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+        run: |
+          python tasks_bot.py \
+            --file "${{ inputs.tasks_file }}" \
+            ${{ inputs.dry_run == true && '--dry-run' || '' }}
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-screenshots
+          path: |
+            dryrun-*.png
+            failed-*.png
+            task-error.png
+            debug-page.png
+          if-no-files-found: ignore
+
+      - name: Save session state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: attendance-session-${{ github.run_id }}
