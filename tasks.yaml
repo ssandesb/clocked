@@ -1,42 +1,67 @@
 company: Clock b Business Technology
-project: Urja Nepal
-assignee: Sandesh Bajracharya
+assignee: Jenish Sharma
 priority: Medium
 deadline_day: last
 
 tasks:
-  - title: Investment Circle / Urja Nepal — Platform Fixes & QA Sprint
+  - title: Investment Circle & Nepal Urja — IC Export, Forms & Homepage CTAs
+    project: Urja Nepal
     description: >
-      Sprint covering marketplace UI fixes, homepage improvements, Docker/MinIO
-      infrastructure fixes, mobile preview tooling, QA verification, and PM
-      coordination for the Investment Circle & Urja Nepal ecosystem.
+      Sprint from stakeholder feedback (Nepali docs translated to user stories):
+      add export on Bhumi & Urja IC pages, update IC forms, and fix Nepal Urja
+      homepage sections (remove Trusted Developer, dynamic investment options,
+      correct CTA routing, Build for Trust imagery).
     criteria:
-      - All subtasks completed, tested and verified
-      - Reported issues from QA chat addressed and closed
+      - Export works on both Bhumi and Urja IC pages
+      - IC form updates deployed and validated
+      - All Nepal Urja homepage CTAs route correctly
     subtasks:
-      - title: As an investor, I want marketplace project-detail hero tags (construction, IPO, risk) readable over the cover image.
+      - title: As an admin, I want to export IC page data from the Bhumi Finder Investment Circle page so stakeholders can download records.
         hours: 3
-      - title: As a visitor, I want homepage advisor WhatsApp CTA, dashboard preview, footer social links, and navbar logo fixes.
-        hours: 4
-      - title: As an investor, I want the developer photo/logo on marketplace project detail instead of only initials.
+      - title: As an admin, I want to export IC page data from the Nepal Urja Investment Circle page with the same export format.
         hours: 3
-      - title: As an operator, I want Docker + MinIO fallback URL fixes and superadmin dashboard redirection.
+      - title: As a product owner, I want the IC inquiry/registration form fields updated per the latest requirements document.
         hours: 4
-      - title: As a developer, I want ngrok hosts allowed in Vite so mobile preview works without host errors.
+      - title: As a developer, I want a backend export endpoint for IC data (CSV/Excel) with permission checks.
+        hours: 4
+      - title: As a visitor on Nepal Urja, I want the Trusted Developer section removed from the homepage.
         hours: 2
-      - title: As a tester, I want MinIO/CDN image paths verified (local 9001 vs bhumifinder.com prod).
-        hours: 3
-      - title: As QA, I want remaining reported issues tested and reported back (Prakash Jun 19 chat).
-        hours: 3
-      - title: As PM, I want dev branch deploy coordinated with Roman and chat-related fixes tracked.
+      - title: As a visitor, I want Investment Options on Nepal Urja homepage loaded dynamically from CMS/API instead of hardcoded content.
         hours: 4
-      - title: As PM, I want legal-template vs per-project doc question documented for IC sheet.
-        hours: 1
-      - title: As a visitor, I want homepage Real Estate section to show live deal cards like /marketplace/realestate.
-        hours: 4
-      - title: As a tester, I want ngrok tunnel for mobile preview of Investment Circle.
+      - title: As a visitor, I want the Explore Opportunity button to navigate to the marketplace listing page.
         hours: 3
-      - title: As a tester, I want same-Wi-Fi LAN preview link for quick device checks.
+      - title: As an investor, I want the Invest in Fund CTA to redirect to the Investment Circle flow/page.
         hours: 2
-      - title: As a partner, I want contact copy reflecting Nepal Urja + Investment Circle ecosystem and IC update reqs captured.
+      - title: As a visitor, I want the Build for Trust homepage section to display the correct trust-building image asset.
+        hours: 3
+      - title: As QA, I want IC export and updated form flows tested end-to-end on staging.
+        hours: 3
+      - title: As QA, I want all Nepal Urja homepage CTA links verified (marketplace, IC redirect, no broken routes).
+        hours: 3
+      - title: As a developer, I want export edge cases handled (empty datasets, unauthorized users, large files).
+        hours: 3
+      - title: As PM, I want staging deploy coordinated and changes signed off before production.
+        hours: 3
+
+  - title: Optimize Bhumifinder to 80% Performance
+    project: Bhumi Finder
+    description: >
+      Improve bhumifinder.com PageSpeed / Core Web Vitals toward 80+ score on
+      mobile. Address bundle size, images, lazy loading, and scroll performance.
+    criteria:
+      - Mobile PageSpeed score ≥ 80 on homepage
+      - No scroll crashes on mid-range mobile devices
+      - Key pages (home, marketplace, property detail) meet LCP targets
+    subtasks:
+      - title: As a developer, I want a PageSpeed baseline audit documented with top bottlenecks (images, JS, LCP, CLS).
+        hours: 2
+      - title: As a developer, I want hero/logo PNG assets compressed and served as WebP with responsive sizes.
         hours: 4
+      - title: As a developer, I want the main JS bundle code-split so initial load stays under budget.
+        hours: 4
+      - title: As a developer, I want homepage carousel media lazy-loaded so only visible cards mount video/iframes.
+        hours: 3
+      - title: As a developer, I want LCP and CLS fixes on homepage and marketplace listing pages.
+        hours: 4
+      - title: As QA, I want post-optimization PageSpeed re-run and results compared to baseline.
+        hours: 2

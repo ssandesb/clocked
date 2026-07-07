@@ -58,8 +58,25 @@ def select_combobox(page: Page, trigger_text: str, option: str) -> None:
     """Open a Radix combobox showing `trigger_text` and pick `option`."""
     page.get_by_role("combobox").filter(has_text=trigger_text).first.click()
     page.wait_for_timeout(400)
-    page.get_by_role("option", name=option, exact=False).first.click()
-    page.wait_for_timeout(400)
+    select_option(page, option)
+
+
+def select_option(page: Page, option: str) -> None:
+    """Pick a dropdown option (handles labels like 'JS\\nJenish Sharma')."""
+    candidates = [
+        page.get_by_role("option", name=option, exact=True),
+        page.get_by_role("option", name=option, exact=False),
+        page.locator('[role="option"]').filter(has_text=option),
+    ]
+    for loc in candidates:
+        try:
+            loc.first.wait_for(state="visible", timeout=5_000)
+            loc.first.click()
+            page.wait_for_timeout(400)
+            return
+        except PlaywrightTimeout:
+            continue
+    raise PlaywrightTimeout(f'Could not select option "{option}"')
 
 
 def enabled_days(page: Page) -> list[int]:
@@ -137,8 +154,7 @@ def fill_subtask_row(page: Page, sub: dict, default_assignee: str) -> None:
     if row_box.count():
         row_box.first.click()
         page.wait_for_timeout(300)
-        page.get_by_role("option", name=want, exact=False).first.click()
-        page.wait_for_timeout(300)
+        select_option(page, want)
 
 
 def remove_empty_subtask_rows(page: Page) -> None:
