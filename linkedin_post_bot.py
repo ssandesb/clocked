@@ -234,7 +234,7 @@ def main() -> int:
 
   user_id = require_env("COMPOSIO_USER_ID")
   linkedin_account_id = os.environ.get("COMPOSIO_LINKEDIN_CONNECTED_ACCOUNT_ID", "ca_v3V7Hx653dg3").strip()
-  gmail_account_id = os.environ.get("COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID", "").strip()
+  gmail_account_id = os.environ.get("COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID", "ca_0ju99DwEbuxD").strip()
   notify_email = os.environ.get("NOTIFY_EMAIL", "bajracharyasandeshh@gmail.com").strip()
 
   if not linkedin_account_id:
