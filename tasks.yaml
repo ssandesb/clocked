@@ -1,67 +1,171 @@
+# Investment Circle sprint — founderp.ai bulk create (tasks_bot.py / GitHub Actions)
+# Run: Actions -> Create Tasks -> Run workflow (tasks_file: tasks.yaml)
+# Portal: https://founderp.ai
+
 company: Clock b Business Technology
-assignee: Jenish Sharma
+project: Investment Circle
+assignee: Sandesh Bajracharya
 priority: Medium
 deadline_day: last
 
 tasks:
-  - title: Investment Circle & Nepal Urja — IC Export, Forms & Homepage CTAs
-    project: Urja Nepal
+  - title: Company submenu hero sections (Our Story, Careers, etc.)
     description: >
-      Sprint from stakeholder feedback (Nepali docs translated to user stories):
-      add export on Bhumi & Urja IC pages, update IC forms, and fix Nepal Urja
-      homepage sections (remove Trusted Developer, dynamic investment options,
-      correct CTA routing, Build for Trust imagery).
+      As a visitor, I want Company submenu pages (Our Story, Careers, and related
+      pages) to use the same hero layout and styling as /about, so the brand feels
+      consistent across the site.
     criteria:
-      - Export works on both Bhumi and Urja IC pages
-      - IC form updates deployed and validated
-      - All Nepal Urja homepage CTAs route correctly
+      - Our Story and Careers heroes match /about layout on desktop and mobile
     subtasks:
-      - title: As an admin, I want to export IC page data from the Bhumi Finder Investment Circle page so stakeholders can download records.
-        hours: 3
-      - title: As an admin, I want to export IC page data from the Nepal Urja Investment Circle page with the same export format.
-        hours: 3
-      - title: As a product owner, I want the IC inquiry/registration form fields updated per the latest requirements document.
-        hours: 4
-      - title: As a developer, I want a backend export endpoint for IC data (CSV/Excel) with permission checks.
-        hours: 4
-      - title: As a visitor on Nepal Urja, I want the Trusted Developer section removed from the homepage.
-        hours: 2
-      - title: As a visitor, I want Investment Options on Nepal Urja homepage loaded dynamically from CMS/API instead of hardcoded content.
-        hours: 4
-      - title: As a visitor, I want the Explore Opportunity button to navigate to the marketplace listing page.
-        hours: 3
-      - title: As an investor, I want the Invest in Fund CTA to redirect to the Investment Circle flow/page.
-        hours: 2
-      - title: As a visitor, I want the Build for Trust homepage section to display the correct trust-building image asset.
-        hours: 3
-      - title: As QA, I want IC export and updated form flows tested end-to-end on staging.
-        hours: 3
-      - title: As QA, I want all Nepal Urja homepage CTA links verified (marketplace, IC redirect, no broken routes).
-        hours: 3
-      - title: As a developer, I want export edge cases handled (empty datasets, unauthorized users, large files).
-        hours: 3
-      - title: As PM, I want staging deploy coordinated and changes signed off before production.
-        hours: 3
+      - title: Audit Company submenu pages vs /about hero
+        hours: 1
+      - title: Extract shared hero component from AboutPage
+        hours: 1
+      - title: Apply shared hero to Our Story and Careers
+        hours: 1
+      - title: Mobile responsive polish on Company pages
+        hours: 1
 
-  - title: Optimize Bhumifinder to 80% Performance
-    project: Bhumi Finder
+  - title: Marketplace color themes per vertical
     description: >
-      Improve bhumifinder.com PageSpeed / Core Web Vitals toward 80+ score on
-      mobile. Address bundle size, images, lazy loading, and scroll performance.
+      As a visitor, I want each marketplace (Business, Startup, Real Estate) to use
+      colors matching its brand — Startup red, Real Estate dark blue, Business unchanged.
     criteria:
-      - Mobile PageSpeed score ≥ 80 on homepage
-      - No scroll crashes on mid-range mobile devices
-      - Key pages (home, marketplace, property detail) meet LCP targets
+      - Startup uses red theme; Real Estate uses dark blue; Business unchanged
     subtasks:
-      - title: As a developer, I want a PageSpeed baseline audit documented with top bottlenecks (images, JS, LCP, CLS).
-        hours: 2
-      - title: As a developer, I want hero/logo PNG assets compressed and served as WebP with responsive sizes.
-        hours: 4
-      - title: As a developer, I want the main JS bundle code-split so initial load stays under budget.
-        hours: 4
-      - title: As a developer, I want homepage carousel media lazy-loaded so only visible cards mount video/iframes.
-        hours: 3
-      - title: As a developer, I want LCP and CLS fixes on homepage and marketplace listing pages.
-        hours: 4
-      - title: As QA, I want post-optimization PageSpeed re-run and results compared to baseline.
-        hours: 2
+      - title: Define theme tokens per marketplace route
+        hours: 1
+      - title: Apply Startup red on cards and detail chrome
+        hours: 1
+      - title: Apply Real Estate dark blue theme
+        hours: 1
+      - title: Verify Business marketplace unchanged
+        hours: 1
+
+  - title: Dynamic dashboard greeting by time of day
+    description: >
+      As a logged-in user, I want dashboard pages to greet me with Good morning,
+      Good afternoon, or Good evening based on local time.
+    criteria:
+      - Greeting updates correctly for morning, afternoon, and evening
+    subtasks:
+      - title: Add getTimeGreeting helper with thresholds
+        hours: 1
+      - title: Wire greeting into investor and admin dashboards
+        hours: 1
+      - title: Timezone-safe fallback copy
+        hours: 1
+      - title: Mobile dashboard visual QA
+        hours: 1
+
+  - title: Homepage Platforms Under Management section
+    description: >
+      As a visitor, I want a Platforms Under Management section on the homepage
+      styled like the Our Partners section on revampnepal.com.
+    criteria:
+      - Section matches partners-style layout with platform logos and links
+    subtasks:
+      - title: Reference revampnepal.com Our Partners layout
+        hours: 1
+      - title: Build responsive Platforms Under Management component
+        hours: 1
+      - title: Add IC and related platform entries with links
+        hours: 1
+      - title: Homepage integration and mobile spacing
+        hours: 1
+
+  - title: Fund manager CRUD and create-product selector
+    description: >
+      As an admin, I want to create, edit, and delete fund managers in the admin
+      dashboard, and select them when creating a product.
+    criteria:
+      - Fund managers CRUD works in admin; create-product shows live dropdown
+    subtasks:
+      - title: Backend API for fund managers CRUD
+        hours: 1
+      - title: Admin UI table and form for fund managers
+        hours: 1
+      - title: Fund manager dropdown on create-product form
+        hours: 1
+      - title: Validation, empty states, error handling
+        hours: 1
+
+  - title: Investor My Investments — vertical tabs and last-created default
+    description: >
+      As an investor, I want My Investments tabs arranged vertically and the tab
+      matching my most recently created investment opened first.
+    criteria:
+      - Vertical tabs on /investor; default tab matches last-created investment type
+    subtasks:
+      - title: Redesign My Investments to vertical tab layout
+        hours: 1
+      - title: Derive last-created investment type from user data
+        hours: 1
+      - title: Default active tab on page load
+        hours: 1
+      - title: Mobile layout and touch target QA
+        hours: 1
+
+  - title: Investor settings page
+    description: >
+      As an investor, I want a Settings page to update profile details, contact
+      preferences, and notification options.
+    criteria:
+      - Settings page saves profile and shows success/error feedback
+    subtasks:
+      - title: Add /investor/settings route and nav entry
+        hours: 1
+      - title: Profile fields with save API
+        hours: 1
+      - title: Notification preference toggles
+        hours: 1
+      - title: Form validation and toasts
+        hours: 1
+
+  - title: Startup marketplace — fixed investment amount
+    description: >
+      As a visitor browsing startups, I want investment looking for shown as a fixed
+      amount (not a range) on marketplace cards and the startup detail page.
+    criteria:
+      - Cards and detail show single NPR amount, not a range
+    subtasks:
+      - title: Update startup card to single amount
+        hours: 1
+      - title: Update startup detail page investment display
+        hours: 1
+      - title: Align API field mapping fixed vs range
+        hours: 1
+      - title: Consistent NPR currency formatting
+        hours: 1
+
+  - title: Startup marketplace — hide founder PII
+    description: >
+      As a visitor browsing startups, I want founder email, phone, and name hidden on
+      marketplace cards and detail pages to protect privacy.
+    criteria:
+      - Public startup views hide email, phone, and founder name
+    subtasks:
+      - title: Hide PII on startup marketplace card
+        hours: 1
+      - title: Hide PII on startup detail public view
+        hours: 1
+      - title: Preserve admin or authenticated views if required
+        hours: 1
+      - title: Regression check other marketplace types
+        hours: 1
+
+  - title: Sprint QA — mobile responsive and cross-page polish
+    description: >
+      As QA, I want this sprint UI changes verified on mobile and desktop so nothing
+      regresses across Company, homepage, investor, and startup flows.
+    criteria:
+      - Critical paths pass smoke test on mobile and desktop
+    subtasks:
+      - title: Mobile pass heroes, Platforms section, investor tabs
+        hours: 1
+      - title: Verify marketplace themes on small screens
+        hours: 1
+      - title: End-to-end fund manager flow smoke test
+        hours: 1
+      - title: Log and fix critical layout bugs in budget
+        hours: 1

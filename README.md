@@ -110,3 +110,17 @@ python attendance_bot.py --action auto
   only if it gets bounced to `/login` does it re-enter credentials.
 - The demo portal expires sessions every 5 minutes, so most scheduled runs
   will do a fresh login — that's expected and handled.
+
+## Bulk-create tasks on founderp.ai
+
+| File | Purpose |
+|------|---------|
+| `tasks_bot.py` | Playwright bot — logs into founderp.ai and creates tasks from YAML |
+| `tasks.yaml` | Current sprint tasks (commit this, then run the workflow) |
+| `tasks.example.yaml` | Format reference |
+| `.github/workflows/create-tasks.yml` | Manual GitHub Action to run the bot |
+
+1. Edit `tasks.yaml` (defaults: `company`, `project`, `assignee`, `deadline_day`).
+2. Push to `github.com/ssandesb/clocked`.
+3. **Actions → Create Tasks → Run workflow** (use `dry_run: true` first to validate).
+4. Requires secrets: `PORTAL_URL` (`https://founderp.ai`), `PORTAL_EMAIL`, `PORTAL_PASSWORD`.

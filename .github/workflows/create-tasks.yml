@@ -1,8 +1,9 @@
 name: Create Tasks
 
-# Bulk-create tasks on the portal from a YAML file in the repo.
-# Usage: edit/commit a tasks YAML file (see tasks.example.yaml), then
-# Actions -> Create Tasks -> Run workflow, and point it at that file.
+# Bulk-create tasks on founderp.ai from tasks.yaml via Playwright bot.
+# 1. Edit/commit tasks.yaml in this repo (clocked)
+# 2. GitHub -> Actions -> Create Tasks -> Run workflow
+# 3. Optional dry_run first to validate forms without submitting
 
 on:
   workflow_dispatch:
