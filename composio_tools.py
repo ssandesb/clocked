@@ -6,7 +6,28 @@ import json
 import os
 from typing import Any
 
-from attendance_dispatch import composio_client, load_dotenv
+def load_dotenv(path: str = ".env") -> None:
+  if not os.path.isfile(path):
+    return
+  with open(path, encoding="utf-8") as fh:
+    for raw in fh:
+      line = raw.strip()
+      if not line or line.startswith("#") or "=" not in line:
+        continue
+      key, _, val = line.partition("=")
+      key = key.strip()
+      val = val.strip().strip("'").strip('"')
+      if key and key not in os.environ:
+        os.environ[key] = val
+
+
+def composio_client():
+  from composio import Composio
+
+  api_key = os.environ.get("COMPOSIO_API_KEY", "").strip()
+  if not api_key:
+    raise RuntimeError("COMPOSIO_API_KEY is not set")
+  return Composio(api_key=api_key)
 
 
 def execute_tool(
