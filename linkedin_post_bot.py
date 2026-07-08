@@ -80,6 +80,38 @@ def extract_image_url(result: dict) -> str:
   return candidates[0]
 
 
+def extract_file_uploadable(result: dict, *, default_name: str) -> dict:
+  """Extract Composio FileUploadable shape required by LinkedIn images[].
+
+  LinkedIn expects each image as:
+    {"name": "...", "mimetype": "...", "s3key": "..."}
+  """
+  data = unwrap_data(result)
+  candidates: list[dict] = []
+
+  def walk(node: Any) -> None:
+    if isinstance(node, dict):
+      if "s3key" in node:
+        candidates.append(node)
+      for val in node.values():
+        walk(val)
+    elif isinstance(node, list):
+      for item in node:
+        walk(item)
+
+  walk(data)
+  if not candidates:
+    raise RuntimeError(f"No file uploadable payload found: {json.dumps(result)[:500]}")
+
+  best = candidates[0]
+  s3key = str(best.get("s3key", "")).strip()
+  if not s3key:
+    raise RuntimeError(f"File upload payload missing s3key: {json.dumps(best)[:200]}")
+  mimetype = str(best.get("mimetype") or "image/png").strip()
+  name = str(best.get("name") or default_name).strip() or default_name
+  return {"name": name, "mimetype": mimetype, "s3key": s3key}
+
+
 def linkedin_author_urn(my_info: dict) -> str:
   data = unwrap_data(my_info)
   if not isinstance(data, dict):
@@ -144,7 +176,7 @@ def generate_post_text(client: Any, user_id: str) -> str:
   return text
 
 
-def generate_doodle_image(client: Any, user_id: str) -> str:
+def generate_doodle_image(client: Any, user_id: str) -> dict:
   log("info", "Generating MCP doodle image with Gemini...")
   result = execute_tool(
     client,
@@ -157,9 +189,14 @@ def generate_doodle_image(client: Any, user_id: str) -> str:
     },
     user_id=user_id,
   )
-  url = extract_image_url(result)
-  log("info", f"Image ready: {url[:80]}...")
-  return url
+  uploadable = extract_file_uploadable(result, default_name="mcp-doodle.png")
+  # Helpful debug line while still keeping usable payload for LinkedIn.
+  try:
+    url = extract_image_url(result)
+    log("info", f"Image ready: {url[:80]}...")
+  except Exception:
+    log("info", "Image ready (S3 key extracted for LinkedIn upload).")
+  return uploadable
 
 
 def publish_linkedin_post(
@@ -168,7 +205,7 @@ def publish_linkedin_post(
   user_id: str,
   linkedin_account_id: str,
   commentary: str,
-  image_url: str,
+  image_uploadable: dict,
 ) -> str:
   log("info", "Resolving LinkedIn author...")
   my_info = execute_tool(
@@ -189,7 +226,7 @@ def publish_linkedin_post(
       "commentary": commentary,
       "visibility": "PUBLIC",
       "lifecycleState": "PUBLISHED",
-      "images": [image_url],
+      "images": [image_uploadable],
     },
     user_id=user_id,
     connected_account_id=linkedin_account_id,
@@ -245,13 +282,13 @@ def main() -> int:
   client = composio_client()
 
   post_text = generate_post_text(client, user_id)
-  image_url = generate_doodle_image(client, user_id)
+  image_uploadable = generate_doodle_image(client, user_id)
   post_link = publish_linkedin_post(
     client,
     user_id=user_id,
     linkedin_account_id=linkedin_account_id,
     commentary=post_text,
-    image_url=image_url,
+    image_uploadable=image_uploadable,
   )
   send_done_email(
     client,
