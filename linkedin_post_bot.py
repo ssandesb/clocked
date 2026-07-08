@@ -100,6 +100,22 @@ def extract_file_uploadable(result: dict, *, default_name: str) -> dict:
         walk(item)
 
   walk(data)
+  # Fallback: some Gemini responses return {image: {name,mimetype,s3url}}.
+  if not candidates and isinstance(data, dict):
+    image_obj = data.get("image")
+    if isinstance(image_obj, dict):
+      s3url = str(image_obj.get("s3url", "")).strip()
+      if s3url:
+        parsed = urllib.parse.urlparse(s3url)
+        # Convert URL path '/bucket/path/to/file' -> 'bucket/path/to/file'
+        path = parsed.path.lstrip("/")
+        if path:
+          return {
+            "name": str(image_obj.get("name") or default_name).strip() or default_name,
+            "mimetype": str(image_obj.get("mimetype") or "image/png").strip(),
+            "s3key": path,
+          }
+
   if not candidates:
     raise RuntimeError(f"No file uploadable payload found: {json.dumps(result)[:500]}")
 
