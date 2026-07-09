@@ -143,6 +143,7 @@ def main() -> int:
     linkedin_account_id=linkedin_account_id,
     commentary=caption,
     image_uploadable=image_uploadable,
+    lifecycle_state="DRAFT" if plan.publish_mode == "draft" else "PUBLISHED",
   )
   send_done_email(
     client,

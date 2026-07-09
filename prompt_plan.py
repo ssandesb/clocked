@@ -11,6 +11,7 @@ from composio_tools import execute_tool
 from linkedin_post_bot import extract_text, log
 
 ImageSource = Literal["gemini", "drive", "none"]
+PublishMode = Literal["draft", "publish"]
 
 PLAN_PROMPT_TEMPLATE = """You convert a daily LinkedIn automation instruction into JSON only.
 
@@ -26,11 +27,13 @@ Return ONLY valid JSON (no markdown fences) matching this schema:
     "source": "gemini" | "drive" | "none",
     "drive_filename": "string or null — required when source is drive",
     "gemini_image_prompt": "string or null — doodle prompt when source is gemini"
-  }}
+  }},
+  "publish_mode": "draft" | "publish"
 }}
 
 Rules:
 - caption_instruction must reflect today's topic from the doc.
+- publish_mode is "draft" when the doc says do not post, draft only, or save as draft; otherwise "publish".
 - Default image.source is "gemini" when the doc asks for an AI/doodle image or says nothing about images.
 - Use image.source "drive" when the doc says to use a specific file from Google Drive (set drive_filename).
 - Use image.source "none" only when the doc explicitly says text-only with no image.
@@ -55,6 +58,14 @@ class PromptPlan:
   image_source: ImageSource
   drive_filename: str | None
   gemini_image_prompt: str | None
+  publish_mode: PublishMode = "publish"
+
+
+def detect_publish_mode(doc_text: str) -> PublishMode:
+  lower = doc_text.lower()
+  if any(phrase in lower for phrase in ("do not post", "don't post", "draft only", "as a draft", "save as draft")):
+    return "draft"
+  return "publish"
 
 
 def _extract_json_object(text: str) -> dict:
@@ -97,17 +108,22 @@ def normalize_plan(raw: dict) -> PromptPlan:
       "Simple sketch style, black ink lines, minimal color accents."
     )
 
+  publish_mode = str(raw.get("publish_mode", "publish")).strip().lower()
+  if publish_mode not in ("draft", "publish"):
+    publish_mode = "publish"
+
   return PromptPlan(
     caption_instruction=caption,
     image_source=source,  # type: ignore[arg-type]
     drive_filename=drive_filename,
     gemini_image_prompt=gemini_image_prompt,
+    publish_mode=publish_mode,  # type: ignore[arg-type]
   )
 
 
 def fallback_plan(doc_text: str) -> PromptPlan:
   """Use doc text directly as caption instruction when Gemini JSON fails."""
-  log("info", "Using fallback plan from raw prompt.docx text.")
+  log("info", "Using fallback plan from raw prompt text.")
   return PromptPlan(
     caption_instruction=doc_text.strip(),
     image_source="gemini",
@@ -116,6 +132,7 @@ def fallback_plan(doc_text: str) -> PromptPlan:
       "Hand-drawn doodle illustration on white background matching the post topic. "
       "Simple sketch style, black ink lines, minimal color accents."
     ),
+    publish_mode=detect_publish_mode(doc_text),
   )
 
 
@@ -139,7 +156,9 @@ def build_plan_from_doc(client: Any, user_id: str, doc_text: str) -> PromptPlan:
   try:
     raw = _extract_json_object(raw_text)
     plan = normalize_plan(raw)
-    log("info", f"Plan: image.source={plan.image_source}")
+    if detect_publish_mode(doc_text) == "draft":
+      plan.publish_mode = "draft"
+    log("info", f"Plan: image.source={plan.image_source}, publish_mode={plan.publish_mode}")
     return plan
   except (json.JSONDecodeError, ValueError, TypeError) as exc:
     log("info", f"Plan parse failed ({exc}); using fallback.")

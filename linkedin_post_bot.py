@@ -222,6 +222,7 @@ def publish_linkedin_post(
   linkedin_account_id: str,
   commentary: str,
   image_uploadable: dict | None = None,
+  lifecycle_state: str = "PUBLISHED",
 ) -> str:
   log("info", "Resolving LinkedIn author...")
   my_info = execute_tool(
@@ -233,12 +234,13 @@ def publish_linkedin_post(
   )
   author = linkedin_author_urn(my_info)
 
-  log("info", "Publishing LinkedIn post...")
+  action = "Saving LinkedIn draft..." if lifecycle_state == "DRAFT" else "Publishing LinkedIn post..."
+  log("info", action)
   post_args: dict[str, Any] = {
     "author": author,
     "commentary": commentary,
     "visibility": "PUBLIC",
-    "lifecycleState": "PUBLISHED",
+    "lifecycleState": lifecycle_state,
   }
   if image_uploadable:
     post_args["images"] = [image_uploadable]
@@ -251,7 +253,8 @@ def publish_linkedin_post(
     connected_account_id=linkedin_account_id,
   )
   link = extract_post_link(create_result)
-  log("info", f"LinkedIn post published: {link}")
+  done = "draft saved" if lifecycle_state == "DRAFT" else "published"
+  log("info", f"LinkedIn post {done}: {link}")
   return link
 
 

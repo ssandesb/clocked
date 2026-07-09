@@ -159,6 +159,24 @@ def _fetch_proxy_binary(proxy_response: Any) -> tuple[bytes, str]:
   return response.content, content_type.split(";")[0].strip()
 
 
+def _proxy_response_text(proxy_response: Any) -> str:
+  """Read text from a Composio proxy response (inline data or binary fetch)."""
+  payload = _as_dict(proxy_response) or {}
+  status = payload.get("status")
+  if status is not None and int(float(status)) >= 400:
+    raise RuntimeError(f"Proxy request failed with status {status}: {json.dumps(payload)[:500]}")
+
+  for candidate in (payload.get("data"), dig(payload, "data", "data")):
+    if isinstance(candidate, str) and candidate.strip():
+      return candidate.strip()
+
+  content, content_type = _fetch_proxy_binary(proxy_response)
+  text = content.decode("utf-8", errors="replace").strip()
+  if not text:
+    raise RuntimeError(f"Proxy returned empty text (content-type={content_type})")
+  return text
+
+
 def export_google_doc_text(
   client: Any,
   *,
@@ -174,11 +192,7 @@ def export_google_doc_text(
       {"name": "mimeType", "value": "text/plain", "type": "query"},
     ],
   )
-  content, _ = _fetch_proxy_binary(proxy_response)
-  text = content.decode("utf-8", errors="replace").strip()
-  if not text:
-    raise RuntimeError("Google Doc export returned empty text")
-  return text
+  return _proxy_response_text(proxy_response)
 
 
 def download_drive_file_bytes(
