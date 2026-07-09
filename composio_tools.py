@@ -159,6 +159,28 @@ def _fetch_proxy_binary(proxy_response: Any) -> tuple[bytes, str]:
   return response.content, content_type.split(";")[0].strip()
 
 
+def export_google_doc_text(
+  client: Any,
+  *,
+  drive_account_id: str,
+  file_id: str,
+) -> str:
+  """Export a native Google Doc as plain text via Drive API."""
+  proxy_response = client.tools.proxy(
+    endpoint=f"https://www.googleapis.com/drive/v3/files/{file_id}/export",
+    method="GET",
+    connected_account_id=drive_account_id,
+    parameters=[
+      {"name": "mimeType", "value": "text/plain", "type": "query"},
+    ],
+  )
+  content, _ = _fetch_proxy_binary(proxy_response)
+  text = content.decode("utf-8", errors="replace").strip()
+  if not text:
+    raise RuntimeError("Google Doc export returned empty text")
+  return text
+
+
 def download_drive_file_bytes(
   client: Any,
   *,

@@ -3,7 +3,7 @@
 Prompt-driven LinkedIn post (runs on GitHub Actions).
 
 Flow:
-  1. Read prompt.docx from Google Drive
+  1. Read prompt from Google Drive (Google Doc or .docx)
   2. Gemini converts doc text → JSON execution plan
   3. Gemini writes caption; image from Gemini, Drive, or none
   4. LinkedIn publish + Gmail notification
@@ -12,11 +12,10 @@ Flow:
 from __future__ import annotations
 
 import os
-from io import BytesIO
 from typing import Any
 
 from composio_tools import composio_client, execute_tool, load_dotenv, require_env
-from drive_files import fetch_drive_file_content, fetch_drive_image_uploadable
+from drive_files import fetch_drive_image_uploadable, fetch_drive_prompt_text
 from linkedin_post_bot import (
   extract_file_uploadable,
   extract_text,
@@ -26,17 +25,7 @@ from linkedin_post_bot import (
 )
 from prompt_plan import PromptPlan, build_plan_from_doc
 
-DEFAULT_PROMPT_DOC = "prompt.docx"
-
-
-def read_docx_text(content: bytes) -> str:
-  from docx import Document
-
-  doc = Document(BytesIO(content))
-  paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
-  if not paragraphs:
-    raise RuntimeError("prompt.docx is empty")
-  return "\n\n".join(paragraphs)
+DEFAULT_PROMPT_DOC = "prompt"
 
 
 def fetch_prompt_text(
@@ -47,13 +36,12 @@ def fetch_prompt_text(
   filename: str,
 ) -> str:
   log("info", f"Downloading {filename} from Google Drive...")
-  content, _ = fetch_drive_file_content(
+  text = fetch_drive_prompt_text(
     client,
     user_id=user_id,
     drive_account_id=drive_account_id,
     filename=filename,
   )
-  text = read_docx_text(content)
   log("info", f"Read prompt ({len(text)} chars).")
   return text
 

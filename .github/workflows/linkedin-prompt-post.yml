@@ -35,5 +35,5 @@ jobs:
           COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID: ${{ secrets.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID }}
           COMPOSIO_GOOGLE_DRIVE_CONNECTED_ACCOUNT_ID: ${{ secrets.COMPOSIO_GOOGLE_DRIVE_CONNECTED_ACCOUNT_ID }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
-          PROMPT_DOC_NAME: prompt.docx
+          PROMPT_DOC_NAME: prompt
         run: python linkedin_prompt_bot.py

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from io import BytesIO
 from typing import Any
 
 from composio_tools import (
@@ -10,14 +11,17 @@ from composio_tools import (
   download_drive_file_bytes,
   download_url_bytes_via_drive_proxy,
   execute_tool,
+  export_google_doc_text,
   guess_mimetype,
   stage_uploadable_for_linkedin,
   unwrap_data,
 )
 from linkedin_post_bot import extract_file_uploadable, log
 
+GOOGLE_DOC_MIME = "application/vnd.google-apps.document"
 
-def find_drive_file_id(result: dict, *, filename: str) -> str:
+
+def _drive_files_from_find(result: dict) -> list[dict]:
   data = unwrap_data(result)
   if isinstance(data, str):
     try:
@@ -25,14 +29,18 @@ def find_drive_file_id(result: dict, *, filename: str) -> str:
     except json.JSONDecodeError:
       pass
 
-  files: list[dict] = []
   if isinstance(data, dict):
     raw = data.get("files")
     if isinstance(raw, list):
-      files = [f for f in raw if isinstance(f, dict)]
-    elif isinstance(dig(data, "data", "files"), list):
-      files = [f for f in dig(data, "data", "files") if isinstance(f, dict)]
+      return [f for f in raw if isinstance(f, dict)]
+    nested = dig(data, "data", "files")
+    if isinstance(nested, list):
+      return [f for f in nested if isinstance(f, dict)]
+  return []
 
+
+def find_drive_file(result: dict, *, filename: str) -> dict:
+  files = _drive_files_from_find(result)
   if not files:
     raise RuntimeError(
       f"Google Drive file '{filename}' not found. "
@@ -43,14 +51,18 @@ def find_drive_file_id(result: dict, *, filename: str) -> str:
     name = str(item.get("name", "")).strip()
     file_id = str(item.get("id", "")).strip()
     if name == filename and file_id:
-      return file_id
+      return item
 
   first = files[0]
   file_id = str(first.get("id", "")).strip()
   if not file_id:
     raise RuntimeError(f"No file id in Drive search result: {json.dumps(first)[:300]}")
   log("info", f"Exact name match missing; using first result: {first.get('name')!r}")
-  return file_id
+  return first
+
+
+def find_drive_file_id(result: dict, *, filename: str) -> str:
+  return str(find_drive_file(result, filename=filename)["id"])
 
 
 def extract_download_uri(result: dict) -> str | None:
@@ -76,14 +88,14 @@ def extract_download_uri(result: dict) -> str | None:
   return walk(data)
 
 
-def fetch_drive_file_content(
+def fetch_drive_prompt_text(
   client: Any,
   *,
   user_id: str,
   drive_account_id: str,
   filename: str,
-) -> tuple[bytes, str]:
-  """Download any Drive file as raw bytes (docx, png, etc.)."""
+) -> str:
+  """Read a Drive prompt file (Google Doc or .docx upload) as plain text."""
   log("info", f"Searching Google Drive for '{filename}'...")
   find_result = execute_tool(
     client,
@@ -95,9 +107,53 @@ def fetch_drive_file_content(
     user_id=user_id,
     connected_account_id=drive_account_id,
   )
-  file_id = find_drive_file_id(find_result, filename=filename)
-  log("info", f"Found Drive file id: {file_id}")
+  file_meta = find_drive_file(find_result, filename=filename)
+  file_id = str(file_meta.get("id", "")).strip()
+  mime_type = str(file_meta.get("mimeType", "")).strip()
+  log("info", f"Found Drive file id: {file_id} ({mime_type or 'unknown type'})")
 
+  if mime_type == GOOGLE_DOC_MIME:
+    log("info", "Exporting Google Doc as plain text...")
+    return export_google_doc_text(
+      client,
+      drive_account_id=drive_account_id,
+      file_id=file_id,
+    )
+
+  content, _ = _download_drive_file_by_id(
+    client,
+    user_id=user_id,
+    drive_account_id=drive_account_id,
+    file_id=file_id,
+    filename=filename,
+  )
+  return _bytes_to_prompt_text(content, filename=filename)
+
+
+def _bytes_to_prompt_text(content: bytes, *, filename: str) -> str:
+  if filename.lower().endswith(".docx"):
+    from docx import Document
+
+    doc = Document(BytesIO(content))
+    paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+    if not paragraphs:
+      raise RuntimeError(f"{filename} is empty")
+    return "\n\n".join(paragraphs)
+
+  text = content.decode("utf-8", errors="replace").strip()
+  if not text:
+    raise RuntimeError(f"{filename} is empty")
+  return text
+
+
+def _download_drive_file_by_id(
+  client: Any,
+  *,
+  user_id: str,
+  drive_account_id: str,
+  file_id: str,
+  filename: str,
+) -> tuple[bytes, str]:
   for slug, args in (
     ("GOOGLEDRIVE_DOWNLOAD_FILE", {"fileId": file_id}),
     ("GOOGLEDRIVE_DOWNLOAD_FILE_OPERATION", {"file_id": file_id}),
@@ -124,6 +180,36 @@ def fetch_drive_file_content(
     client,
     drive_account_id=drive_account_id,
     file_id=file_id,
+  )
+
+
+def fetch_drive_file_content(
+  client: Any,
+  *,
+  user_id: str,
+  drive_account_id: str,
+  filename: str,
+) -> tuple[bytes, str]:
+  """Download any Drive file as raw bytes (docx, png, etc.)."""
+  log("info", f"Searching Google Drive for '{filename}'...")
+  find_result = execute_tool(
+    client,
+    "GOOGLEDRIVE_FIND_FILE",
+    {
+      "q": f"name = '{filename}' and trashed = false",
+      "pageSize": 5,
+    },
+    user_id=user_id,
+    connected_account_id=drive_account_id,
+  )
+  file_id = find_drive_file_id(find_result, filename=filename)
+  log("info", f"Found Drive file id: {file_id}")
+  return _download_drive_file_by_id(
+    client,
+    user_id=user_id,
+    drive_account_id=drive_account_id,
+    file_id=file_id,
+    filename=filename,
   )
 
 
