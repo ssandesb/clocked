@@ -221,7 +221,7 @@ def publish_linkedin_post(
   user_id: str,
   linkedin_account_id: str,
   commentary: str,
-  image_uploadable: dict,
+  image_uploadable: dict | None = None,
 ) -> str:
   log("info", "Resolving LinkedIn author...")
   my_info = execute_tool(
@@ -234,16 +234,19 @@ def publish_linkedin_post(
   author = linkedin_author_urn(my_info)
 
   log("info", "Publishing LinkedIn post...")
+  post_args: dict[str, Any] = {
+    "author": author,
+    "commentary": commentary,
+    "visibility": "PUBLIC",
+    "lifecycleState": "PUBLISHED",
+  }
+  if image_uploadable:
+    post_args["images"] = [image_uploadable]
+
   create_result = execute_tool(
     client,
     "LINKEDIN_CREATE_LINKED_IN_POST",
-    {
-      "author": author,
-      "commentary": commentary,
-      "visibility": "PUBLIC",
-      "lifecycleState": "PUBLISHED",
-      "images": [image_uploadable],
-    },
+    post_args,
     user_id=user_id,
     connected_account_id=linkedin_account_id,
   )

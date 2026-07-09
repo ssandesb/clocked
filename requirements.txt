@@ -1,3 +1,5 @@
 playwright>=1.45.0
 tzdata>=2024.1
 PyYAML>=6.0
+composio>=0.17.0
+python-docx>=1.1.0
