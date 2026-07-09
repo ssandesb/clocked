@@ -16,7 +16,18 @@ import os
 import sys
 from typing import Any
 
-from composio_tools import composio_client, dig, execute_tool, load_dotenv, require_env, unwrap_data
+from composio_tools import (
+  composio_client,
+  dig,
+  download_drive_file_bytes,
+  download_url_bytes_via_drive_proxy,
+  execute_tool,
+  guess_mimetype,
+  load_dotenv,
+  require_env,
+  stage_uploadable_for_linkedin,
+  unwrap_data,
+)
 from linkedin_post_bot import (
   POST_PROMPT,
   extract_file_uploadable,
@@ -67,6 +78,29 @@ def find_drive_file_id(result: dict, *, filename: str) -> str:
   return file_id
 
 
+def extract_download_uri(result: dict) -> str | None:
+  data = unwrap_data(result)
+
+  def walk(node: Any) -> str | None:
+    if isinstance(node, dict):
+      for key in ("downloadUri", "download_uri"):
+        val = node.get(key)
+        if isinstance(val, str) and val.startswith("http"):
+          return val
+      for val in node.values():
+        found = walk(val)
+        if found:
+          return found
+    elif isinstance(node, list):
+      for item in node:
+        found = walk(item)
+        if found:
+          return found
+    return None
+
+  return walk(data)
+
+
 def fetch_drive_image_uploadable(
   client: Any,
   *,
@@ -88,26 +122,48 @@ def fetch_drive_image_uploadable(
   file_id = find_drive_file_id(find_result, filename=filename)
   log("info", f"Found Drive file id: {file_id}")
 
-  log("info", "Downloading image from Google Drive...")
-  download_result = execute_tool(
-    client,
-    "GOOGLEDRIVE_DOWNLOAD_FILE",
-    {"fileId": file_id},
-    user_id=user_id,
-    connected_account_id=drive_account_id,
-  )
-  try:
-    return extract_file_uploadable(download_result, default_name=filename)
-  except RuntimeError:
-    log("info", "Retrying download via GOOGLEDRIVE_DOWNLOAD_FILE_OPERATION...")
+  for slug, args in (
+    ("GOOGLEDRIVE_DOWNLOAD_FILE", {"fileId": file_id}),
+    ("GOOGLEDRIVE_DOWNLOAD_FILE_OPERATION", {"file_id": file_id}),
+  ):
+    log("info", f"Trying {slug}...")
     download_result = execute_tool(
       client,
-      "GOOGLEDRIVE_DOWNLOAD_FILE_OPERATION",
-      {"file_id": file_id},
+      slug,
+      args,
       user_id=user_id,
       connected_account_id=drive_account_id,
     )
-    return extract_file_uploadable(download_result, default_name=filename)
+    try:
+      return extract_file_uploadable(download_result, default_name=filename)
+    except RuntimeError:
+      download_uri = extract_download_uri(download_result)
+      if download_uri:
+        log("info", "Staging Drive downloadUri via Composio proxy...")
+        content, mimetype = download_url_bytes_via_drive_proxy(
+          client,
+          drive_account_id=drive_account_id,
+          url=download_uri,
+        )
+        return stage_uploadable_for_linkedin(
+          client,
+          filename=filename,
+          content=content,
+          mimetype=mimetype or guess_mimetype(filename),
+        )
+
+  log("info", "Downloading Drive file via Composio proxy...")
+  content, mimetype = download_drive_file_bytes(
+    client,
+    drive_account_id=drive_account_id,
+    file_id=file_id,
+  )
+  return stage_uploadable_for_linkedin(
+    client,
+    filename=filename,
+    content=content,
+    mimetype=mimetype or guess_mimetype(filename),
+  )
 
 
 def generate_post_text(client: Any, user_id: str) -> str:
