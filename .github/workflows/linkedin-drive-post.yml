@@ -1,0 +1,39 @@
+name: Automate LinkedIn Post (Drive Image)
+
+# Triggered by cron-job.org -> Composio -> workflow_dispatch (no GitHub schedule).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: linkedin-drive-post
+  cancel-in-progress: false
+
+jobs:
+  linkedin-drive-post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install composio
+
+      - name: Run LinkedIn Drive image post bot
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_USER_ID: ${{ secrets.COMPOSIO_USER_ID }}
+          COMPOSIO_LINKEDIN_CONNECTED_ACCOUNT_ID: ${{ secrets.COMPOSIO_LINKEDIN_CONNECTED_ACCOUNT_ID }}
+          COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID: ${{ secrets.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID }}
+          COMPOSIO_GOOGLE_DRIVE_CONNECTED_ACCOUNT_ID: ${{ secrets.COMPOSIO_GOOGLE_DRIVE_CONNECTED_ACCOUNT_ID }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          DRIVE_POST_IMAGE: cursor-2025.png
+        run: python linkedin_drive_post_bot.py
