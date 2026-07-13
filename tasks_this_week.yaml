@@ -1,0 +1,30 @@
+# This week (2026-07-13 → 2026-07-17) — created live via _create_this_week_tasks.py
+company: Clock b Business Technology
+priority: Medium
+start_date: 2026-07-13
+deadline: 2026-07-17
+
+tasks:
+  - title: Week 5 – Public Marketplace Client Submit Flow
+    project: Urja Nepal
+    assignee: Jenish Sharma
+    hours: 20
+    description: >
+      Public marketplace draft submission for Nepal Urja — modular breakdown of the
+      open-branch public submit work (form, MinIO, draft API, admin Send to Client).
+
+  - title: Week 13 – Brand Logo PNG Resize & Asset Pipeline
+    project: Bhumi Finder
+    assignee: Jenish Sharma
+    hours: 20
+    description: >
+      Logo PNG audit, resize/compress pipeline, WebP fallbacks, upload validation,
+      and retina QA across agent + SuperAdmin branding.
+
+  - title: Investor Admin Sync — Prakash Meeting & Follow-ups
+    project: Investment Circle
+    assignee: Sandesh Bajracharya
+    hours: 10
+    description: >
+      Meeting with Prakash, system-admin checklist follow-ups, and investor-admin
+      checks continuing from recent sprint items.
