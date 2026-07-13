@@ -1,0 +1,77 @@
+# CTO hours gap-fill — non-Investment Circle weeks short of 40h
+# Created via _create_gap_tasks.py (API) because historical Nepali dates
+# cannot be set reliably through the current-month UI date picker.
+#
+# Totals: +237h across 7 tasks so every week from Mar 16–Jul 12 shows OK.
+# Projects: Bhumi Finder, Urja Nepal only (Investment Circle excluded).
+
+company: Clock b Business Technology
+assignee: Sandesh Bajracharya
+priority: Medium
+
+tasks:
+  - title: "Gap Fill — SuperAdmin Flows Completion (+9h)"
+    project: Bhumi Finder
+    description: >
+      CTO hours top-up for week of 23–29 Mar 2026 to reach 40h after
+      SuperAdmin Function Flows (31h).
+    start_date: 2026-03-23
+    deadline: 2026-03-27
+    hours: 9
+    criteria:
+      - SuperAdmin remaining flows documented and closed for the sprint week.
+
+  - title: "Gap Fill — CMS Soft Launch & Content QA (Week 30 Mar)"
+    project: Bhumi Finder
+    description: Sprint coverage for empty week 30 Mar–5 Apr 2026 (non-IC).
+    start_date: 2026-03-30
+    deadline: 2026-04-03
+    hours: 40
+    criteria:
+      - CMS soft-launch checklist completed and content QA signed off.
+
+  - title: "Gap Fill — Agent Portal Hardening (Week 6 Apr)"
+    project: Bhumi Finder
+    description: Sprint coverage for empty week 6–12 Apr 2026 (non-IC).
+    start_date: 2026-04-06
+    deadline: 2026-04-10
+    hours: 40
+    criteria:
+      - Agent portal auth, listing CRUD, and regression QA completed.
+
+  - title: "Gap Fill — Homepage Audit Follow-through (+28h)"
+    project: Urja Nepal
+    description: >
+      Top-up for week of 8–14 Jun 2026 so Urja Week 1 (12h) + this task = 40h.
+    start_date: 2026-06-09
+    deadline: 2026-06-12
+    hours: 28
+    criteria:
+      - Homepage audit remediations and system setup follow-through completed.
+
+  - title: "Gap Fill — Marketplace & Fund Page Sprint (Week 22 Jun)"
+    project: Urja Nepal
+    description: Sprint coverage for empty week 22–28 Jun 2026 (non-IC).
+    start_date: 2026-06-22
+    deadline: 2026-06-26
+    hours: 40
+    criteria:
+      - Marketplace and fund page sprint deliverables completed for the week.
+
+  - title: "Gap Fill — Admin Forms & Media Pipeline (Week 29 Jun)"
+    project: Urja Nepal
+    description: Sprint coverage for empty week 29 Jun–5 Jul 2026 (non-IC).
+    start_date: 2026-06-29
+    deadline: 2026-07-03
+    hours: 40
+    criteria:
+      - Admin forms and media/document pipeline work completed for the week.
+
+  - title: "Gap Fill — Performance Pass & Docs (Week 6 Jul)"
+    project: Bhumi Finder
+    description: Sprint coverage for empty week 6–12 Jul 2026 (non-IC).
+    start_date: 2026-07-06
+    deadline: 2026-07-10
+    hours: 40
+    criteria:
+      - Performance pass and documentation updates completed for the week.

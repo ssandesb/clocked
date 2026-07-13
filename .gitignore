@@ -15,3 +15,11 @@ venv/
 # Playwright artifacts
 playwright-report/
 test-results/
+
+# Local Founderp probe / report dumps (may contain tokens)
+hours_probe/
+_capture_ui_create.py
+_hours_report_probe.py
+_probe_assign.py
+debug-page.png
+debug-state.png
