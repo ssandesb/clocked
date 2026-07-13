@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from bots.lib.paths import REPO_ROOT
+
 import json
 import os
 import sys
@@ -12,7 +14,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from attendance_bot import (
+from bots.lib.founderp_session import (
     DEFAULT_EMAIL,
     NAV_TIMEOUT_MS,
     STATE_FILE,
@@ -24,7 +26,7 @@ from attendance_bot import (
 
 EXCLUDE_PROJECT = "Investment Circle"
 WEEKLY_TARGET = 40.0
-OUT = Path("hours_probe")
+OUT = REPO_ROOT / "hours_probe"
 OUT.mkdir(exist_ok=True)
 
 # Minimal Bikram Sambat converter (AD <-> BS) for Nepal reporting.

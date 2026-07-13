@@ -1,7 +1,7 @@
 name: Create Tasks
 
 # Bulk-create tasks on founderp.ai from tasks.yaml via Playwright bot.
-# 1. Edit/commit tasks.yaml in this repo (clocked)
+# 1. Edit/commit bots/tasks/data/tasks.yaml (or pass tasks_file)
 # 2. GitHub -> Actions -> Create Tasks -> Run workflow
 # 3. Optional dry_run first to validate forms without submitting
 
@@ -11,7 +11,7 @@ on:
       tasks_file:
         description: "Path to the tasks YAML file in the repo"
         required: true
-        default: "tasks.yaml"
+        default: "bots/tasks/data/tasks.yaml"
       dry_run:
         description: "Dry run (fill forms but do not submit)"
         required: false

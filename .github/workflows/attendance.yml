@@ -77,12 +77,13 @@ jobs:
           ATTENDANCE_PATH: ${{ vars.ATTENDANCE_PATH || '/user/attendance' }}
           ATTENDANCE_TZ: ${{ vars.ATTENDANCE_TZ || 'Asia/Kathmandu' }}
           CLOCK_IN_TIME: ${{ vars.CLOCK_IN_TIME || '09:00' }}
-          CLOCK_OUT_TIME: ${{ vars.CLOCK_OUT_TIME || '18:00' }}
+          CLOCK_OUT_TIME: ${{ vars.CLOCK_OUT_TIME || '18:45' }}
           TIME_TOLERANCE_MIN: ${{ vars.TIME_TOLERANCE_MIN || '90' }}
         run: |
           python attendance_bot.py \
             --action "${{ inputs.action || 'auto' }}" \
             ${{ inputs.force == true && '--force' || '' }}
+        # shim → bots.attendance.bot (see SCRIPTS.md / run.py)
 
       - name: Upload debug screenshot on failure
         if: failure()

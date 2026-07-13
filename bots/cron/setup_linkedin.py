@@ -16,8 +16,8 @@ import json
 import os
 import sys
 
-from attendance_dispatch import load_dotenv
-from patch_cronjob_request import cronjob_request
+from bots.lib.attendance_dispatch import load_dotenv
+from bots.cron.patch_request import cronjob_request
 
 COMPOSIO_EXECUTE_URL = (
   "https://backend.composio.dev/api/v3.1/tools/execute/"
@@ -34,6 +34,30 @@ def log(msg: str) -> None:
 def list_jobs(api_key: str) -> list[dict]:
   data = cronjob_request(api_key, "GET", "/jobs", {})
   return data.get("jobs") or []
+
+
+def patch_job_request(
+  api_key: str,
+  job_id: int,
+  *,
+  headers: dict[str, str],
+  request_body: str,
+) -> dict:
+  """PATCH extended request fields (PUT create often drops headers/body)."""
+  return cronjob_request(
+    api_key,
+    "PATCH",
+    f"/jobs/{job_id}",
+    {
+      "job": {
+        "requestMethod": 1,
+        "extendedData": {
+          "headers": headers,
+          "body": request_body,
+        },
+      }
+    },
+  )
 
 
 def create_job(
@@ -162,6 +186,7 @@ def main() -> int:
     headers=headers,
     request_body=request_body,
   )
+  patch_job_request(api_key, job_id, headers=headers, request_body=request_body)
   log(f"Created job {job_id}: {JOB_TITLE} @ {args.hour:02d}:{args.minute:02d} {tz}")
   return 0
 

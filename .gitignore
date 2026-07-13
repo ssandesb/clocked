@@ -18,8 +18,11 @@ test-results/
 
 # Local Founderp probe / report dumps (may contain tokens)
 hours_probe/
-_capture_ui_create.py
-_hours_report_probe.py
-_probe_assign.py
+bots/tasks/probes/*.png
 debug-page.png
 debug-state.png
+failed-*.png
+dryrun-*.png
+task-error.png
+created-task.png
+

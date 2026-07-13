@@ -6,7 +6,7 @@ import json
 from io import BytesIO
 from typing import Any
 
-from composio_tools import (
+from bots.lib.composio_tools import (
   dig,
   download_drive_file_bytes,
   download_url_bytes_via_drive_proxy,
@@ -16,7 +16,7 @@ from composio_tools import (
   stage_uploadable_for_linkedin,
   unwrap_data,
 )
-from linkedin_post_bot import extract_file_uploadable, log
+from bots.linkedin.post_bot import extract_file_uploadable, log
 
 GOOGLE_DOC_MIME = "application/vnd.google-apps.document"
 

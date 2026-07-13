@@ -1,6 +1,6 @@
 # Automated Attendance Bot
 
-Automates daily **clock-in (9:00 AM)** and **clock-out (6:00 PM)** on a Founderp-style
+Automates daily **clock-in (9:00 AM)** and **clock-out (6:45 PM)** on a Founderp-style
 employment portal using **Python 3.10+ / Playwright** (headless Chromium), scheduled by
 **GitHub Actions** — with manual override from the GitHub mobile app.
 
@@ -16,13 +16,20 @@ closes the browser cleanly, and exits `0` without corrupting anything.
 
 ## Files
 
-| File | Purpose |
+See **[SCRIPTS.md](SCRIPTS.md)** for the organized `bots/` layout and `python run.py …` commands.
+
+| Path | Purpose |
 |------|---------|
-| `attendance_bot.py` | The Playwright bot (login, session reuse, action branching) |
+| `run.py` | Easy CLI launcher for all bots |
+| `bots/attendance/` | Founderp clock-in / clock-out |
+| `bots/tasks/` | Task create, hours report, CTO top-ups |
+| `bots/linkedin/` | LinkedIn posting via Composio |
+| `bots/cron/` | cron-job.org setup helpers |
+| `bots/lib/` | Shared Founderp session + Composio helpers |
+| `attendance_bot.py` | Thin shim → `bots.attendance.bot` (GitHub Actions) |
 | `.github/workflows/attendance.yml` | Cron schedule + manual trigger |
 | `requirements.txt` | Python dependencies |
 | `.env.example` | Template for local configuration |
-| `FounderpAttendance.jsx` | Reference copy of the portal UI (selectors are based on it) |
 
 ## Configuration (all dynamic — no hardcoding)
 
@@ -98,6 +105,9 @@ copy .env.example .env    # then edit .env
 # PowerShell: load .env into the session, or set vars directly:
 $env:PORTAL_URL = "https://founderp.com"
 
+python run.py attendance clock-in --force
+python run.py attendance auto
+# equivalent shim:
 python attendance_bot.py --action clock-in --force
 python attendance_bot.py --action auto
 ```
@@ -111,16 +121,72 @@ python attendance_bot.py --action auto
 - The demo portal expires sessions every 5 minutes, so most scheduled runs
   will do a fresh login — that's expected and handled.
 
+## cron-job.org 24/7 scheduler (9:00 AM + 6:45 PM Nepal)
+
+Cloud cron calls **Composio directly** (no Netlify in the cron path). Composio then dispatches your GitHub workflow (`attendance.yml`), which runs `attendance_bot.py`.
+
+```
+cron-job.org (24/7)
+  -> POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT
+     (header: x-api-key, body: inputs={action=clock-in|clock-out, force=true})
+  -> Composio tool execution: GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT
+  -> ssandesb/clocked attendance.yml
+  -> attendance_bot.py on founderp.ai
+```
+
+### One-time setup
+
+1. **cron-job.org** ([dashboard](https://console.cron-job.org/dashboard)):
+  - Create 2 jobs manually (timezone **Asia/Kathmandu**) and set:
+    - Request method: `POST`
+    - URL: `https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT`
+    - Header: `x-api-key: <your Composio Project API key>`
+    - Request body (JSON):
+      - `inputs.action = clock-in` for the 9:00 job
+      - `inputs.action = clock-out` for the 18:45 job
+      - `force = true`
+  - Schedule:
+    - **Attendance Clock In 9:00** — `0 9 * * *`
+    - **Attendance Clock Out 18:45** — `45 18 * * *`
+
+Notes:
+- `setup_cronjobs.py` can create both routes; by default it creates the Composio-direct cron jobs (same as what we configured manually).
+
+2. **Test locally** (Composio only, no cron):
+   ```bash
+   python cron_dispatch.py --action clock-in
+   python cron_dispatch.py --action clock-out
+   ```
+
+## Calendar → GitHub clock-out trigger
+
+Orchestrator that wires **Map (Google Calendar) → Brain (time gate) → Muscle (GitHub Actions)**:
+
+1. Finds today's **Clock Out Trigger** event via Composio
+2. Compares **now** to the event's exact `start.dateTime`
+3. If early → **sleeps until that second/minute** (or `--no-wait` to skip for cron)
+4. If `now >= start` → dispatches `attendance.yml` with `action=clock-out`
+
+```bash
+pip install -r requirements.txt
+copy .env.example .env   # set COMPOSIO_API_KEY (and optional COMPOSIO_USER_ID)
+
+python run.py attendance calendar-clockout              # wait until exact start, then dispatch
+python run.py attendance calendar-clockout --no-wait    # skip if early (safe for frequent cron)
+python run.py attendance calendar-clockout --dry-run    # find + wait, don't dispatch
+```
+
+Requires active Composio connections for **Google Calendar** and **GitHub** on that API key.
+
 ## Bulk-create tasks on founderp.ai
 
-| File | Purpose |
-|------|---------|
-| `tasks_bot.py` | Playwright bot — logs into founderp.ai and creates tasks from YAML |
-| `tasks.yaml` | Current sprint tasks (commit this, then run the workflow) |
-| `tasks.example.yaml` | Format reference |
-| `.github/workflows/create-tasks.yml` | Manual GitHub Action to run the bot |
+See **[SCRIPTS.md](SCRIPTS.md)**. Quick path:
 
-1. Edit `tasks.yaml` (defaults: `company`, `project`, `assignee`, `deadline_day`).
-2. Push to `github.com/ssandesb/clocked`.
-3. **Actions → Create Tasks → Run workflow** (use `dry_run: true` first to validate).
-4. Requires secrets: `PORTAL_URL` (`https://founderp.ai`), `PORTAL_EMAIL`, `PORTAL_PASSWORD`.
+```bash
+python run.py tasks create --file bots/tasks/data/tasks.yaml --dry-run
+python run.py tasks create --file bots/tasks/data/tasks.yaml
+python run.py tasks report
+```
+
+YAML inputs live in `bots/tasks/data/`. GitHub Action: **Create Tasks** (default file `bots/tasks/data/tasks.yaml`).
+Requires secrets: `PORTAL_URL` (`https://founderp.ai`), `PORTAL_EMAIL`, `PORTAL_PASSWORD`.

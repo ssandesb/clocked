@@ -9,13 +9,16 @@ from typing import Any
 
 import requests
 
+from bots.lib.paths import REPO_ROOT
+
 _CONNECT_TIMEOUT = 5
 _READ_TIMEOUT = 120
 
-def load_dotenv(path: str = ".env") -> None:
-  if not os.path.isfile(path):
+def load_dotenv(path: str | None = None) -> None:
+  env_path = path or str(REPO_ROOT / ".env")
+  if not os.path.isfile(env_path):
     return
-  with open(path, encoding="utf-8") as fh:
+  with open(env_path, encoding="utf-8") as fh:
     for raw in fh:
       line = raw.strip()
       if not line or line.startswith("#") or "=" not in line:

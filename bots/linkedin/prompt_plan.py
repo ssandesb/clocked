@@ -7,8 +7,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from composio_tools import execute_tool
-from linkedin_post_bot import extract_text, log
+from bots.lib.composio_tools import execute_tool
+from bots.linkedin.post_bot import extract_text, log
 
 ImageSource = Literal["gemini", "drive", "none"]
 PublishMode = Literal["draft", "publish"]
